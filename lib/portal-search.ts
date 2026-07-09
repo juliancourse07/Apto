@@ -17,20 +17,29 @@ export const getPriceRange = (price: number) => ({
   max: price + PRICE_RANGE_MARGIN,
 });
 
+export const getFincaRaizSearchUrl = (citySlug: string, bedrooms: number, min: number, max: number) =>
+  `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
+
+export const getMetrocuadradoSearchUrl = (citySlug: string, bedrooms: number, min: number, max: number) =>
+  `https://www.metrocuadrado.com/apartamentos/arriendo/${citySlug}/?preciomin=${min}&preciomax=${max}&numhabitaciones=${bedrooms}`;
+
+export const getCienCuadrasSearchUrl = (citySlug: string, bedrooms: number, min: number, max: number) =>
+  `https://www.ciencuadras.com/arriendo/${citySlug}/apartamento?habitaciones=${bedrooms}&precio_min=${min}&precio_max=${max}`;
+
 export const getFincaRaizUrl = (city: string, bedrooms: number, price: number) => {
   const citySlug = getCitySlug(city);
   const { min, max } = getPriceRange(price);
-  return `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
+  return getFincaRaizSearchUrl(citySlug, bedrooms, min, max);
 };
 
 export const getMetrocuadradoUrl = (city: string, bedrooms: number, price: number) => {
   const citySlug = getCitySlug(city);
   const { min, max } = getPriceRange(price);
-  return `https://www.metrocuadrado.com/apartamentos/arriendo/${citySlug}/?preciomin=${min}&preciomax=${max}&numhabitaciones=${bedrooms}`;
+  return getMetrocuadradoSearchUrl(citySlug, bedrooms, min, max);
 };
 
 export const getCienCuadrasUrl = (city: string, bedrooms: number, price: number) => {
   const citySlug = getCitySlug(city);
   const { min, max } = getPriceRange(price);
-  return `https://www.ciencuadras.com/arriendo/${citySlug}/apartamento?habitaciones=${bedrooms}&precio_min=${min}&precio_max=${max}`;
+  return getCienCuadrasSearchUrl(citySlug, bedrooms, min, max);
 };

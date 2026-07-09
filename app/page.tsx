@@ -10,6 +10,12 @@ import SplitView from "@/components/SplitView";
 import { haversineDistanceInKm } from "@/lib/haversine";
 import { getMafeMatchScore } from "@/lib/match-score";
 import { CLINICA_LEON_XIII, METRO_STATIONS } from "@/lib/metro-stations";
+import {
+  getCienCuadrasSearchUrl,
+  getCitySlug,
+  getFincaRaizSearchUrl,
+  getMetrocuadradoSearchUrl,
+} from "@/lib/portal-search";
 import { Listing, ListingFilters } from "@/types/listing";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
@@ -137,6 +143,26 @@ export default function HomePage() {
     [listings],
   );
 
+  const medellinSlug = getCitySlug("Medellín");
+  const sabanetaSlug = getCitySlug("Sabaneta");
+  const quickBedrooms = 2;
+  const quickMinPrice = 1300000;
+  const quickMaxPrice = 2700000;
+  const quickFincaRaizMedellinUrl = getFincaRaizSearchUrl(medellinSlug, quickBedrooms, quickMinPrice, quickMaxPrice);
+  const quickFincaRaizSabanetaUrl = getFincaRaizSearchUrl(sabanetaSlug, quickBedrooms, quickMinPrice, quickMaxPrice);
+  const quickMetrocuadradoMedellinUrl = getMetrocuadradoSearchUrl(
+    medellinSlug,
+    quickBedrooms,
+    quickMinPrice,
+    quickMaxPrice,
+  );
+  const quickCienCuadrasMedellinUrl = getCienCuadrasSearchUrl(
+    medellinSlug,
+    quickBedrooms,
+    quickMinPrice,
+    quickMaxPrice,
+  );
+
   return (
     <main className="min-h-screen bg-warm text-gray-900 dark:bg-zinc-950 dark:text-zinc-100">
       <Header
@@ -156,7 +182,7 @@ export default function HomePage() {
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <a
-              href="https://www.fincaraiz.com.co/apartamentos/arriendo/medellin/2-habitaciones/?precio_desde=1300000&precio_hasta=2700000"
+              href={quickFincaRaizMedellinUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
@@ -164,7 +190,7 @@ export default function HomePage() {
               Finca Raíz Medellín
             </a>
             <a
-              href="https://www.fincaraiz.com.co/apartamentos/arriendo/sabaneta/2-habitaciones/?precio_desde=1300000&precio_hasta=2700000"
+              href={quickFincaRaizSabanetaUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex justify-center rounded-lg bg-blue-700 px-4 py-3 text-sm font-semibold text-white"
@@ -172,7 +198,7 @@ export default function HomePage() {
               Sabaneta en FR
             </a>
             <a
-              href="https://www.metrocuadrado.com/apartamentos/arriendo/medellin/?preciomin=1300000&preciomax=2700000&numhabitaciones=2"
+              href={quickMetrocuadradoMedellinUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex justify-center rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white"
@@ -180,7 +206,7 @@ export default function HomePage() {
               Metrocuadrado
             </a>
             <a
-              href="https://www.ciencuadras.com/arriendo/medellin/apartamento?habitaciones=2&precio_min=1300000&precio_max=2700000"
+              href={quickCienCuadrasMedellinUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex justify-center rounded-lg bg-orange-700 px-4 py-3 text-sm font-semibold text-white"
