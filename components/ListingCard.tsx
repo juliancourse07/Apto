@@ -26,6 +26,15 @@ const getAgeBadge = (postedAt: string) => {
   return `${days} días`;
 };
 
+const CITY_SLUGS: Record<string, string> = {
+  Medellín: "medellin",
+  Sabaneta: "sabaneta",
+  Envigado: "envigado",
+  Itagüí: "itagui",
+  Bello: "bello",
+  "La Estrella": "la-estrella",
+};
+
 export default function ListingCard({
   listing,
   distanceToMetroKm,
@@ -34,6 +43,13 @@ export default function ListingCard({
 }: ListingCardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const badge = useMemo(() => getAgeBadge(listing.postedAt), [listing.postedAt]);
+  const citySlug = CITY_SLUGS[listing.city] ?? "medellin";
+  const min = Math.max(0, listing.price - 200000);
+  const max = listing.price + 200000;
+  const fincaRaizUrl = `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${listing.bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
+  const metrocuadradoUrl = `https://www.metrocuadrado.com/apartamentos/arriendo/${citySlug}/?preciomin=${min}&preciomax=${max}&numhabitaciones=${listing.bedrooms}`;
+  const cienCuadrasUrl = `https://www.ciencuadras.com/arriendo/${citySlug}/apartamento?habitaciones=${listing.bedrooms}&precio_min=${min}&precio_max=${max}`;
+  const showRealContact = Boolean(listing.contactPhone && !listing.contactPhone.includes("300555"));
 
   return (
     <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -91,7 +107,7 @@ export default function ListingCard({
           🚇 {distanceToMetroKm.toFixed(2)} km al metro · 🏥 {distanceToClinicKm.toFixed(2)} km a la clínica
         </p>
 
-        {listing.contactPhone && (
+        {showRealContact && (
           <div className="flex flex-wrap gap-2 text-sm">
             <span>📞 {listing.contactPhone}</span>
             {listing.whatsapp && (
@@ -115,6 +131,36 @@ export default function ListingCard({
         >
           Ver publicación
         </a>
+
+        <div className="space-y-2 pt-1">
+          <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">Buscar similares en:</p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={fincaRaizUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white"
+            >
+              🔍 Finca Raíz
+            </a>
+            <a
+              href={metrocuadradoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-md bg-green-600 px-2.5 py-1.5 text-xs font-semibold text-white"
+            >
+              Metrocuadrado
+            </a>
+            <a
+              href={cienCuadrasUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-md bg-orange-700 px-2.5 py-1.5 text-xs font-semibold text-white"
+            >
+              CienCuadras
+            </a>
+          </div>
+        </div>
       </div>
     </article>
   );

@@ -43,6 +43,22 @@ const seeds = [
   ["Aves María", "Sabaneta", "Sabaneta", 6.1533, -75.6079, 2300000, 3, 2],
 ] as const;
 
+const CITY_SLUGS: Record<string, string> = {
+  Medellín: "medellin",
+  Sabaneta: "sabaneta",
+  Envigado: "envigado",
+  Itagüí: "itagui",
+  Bello: "bello",
+  "La Estrella": "la-estrella",
+};
+
+const getFincaRaizSearchUrl = (city: string, bedrooms: number, price: number) => {
+  const citySlug = CITY_SLUGS[city] ?? "medellin";
+  const min = Math.max(0, price - 200000);
+  const max = price + 200000;
+  return `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
+};
+
 export const MOCK_LISTINGS: Listing[] = seeds.map((seed, index) => {
   const [neighborhood, city, comuna, latitude, longitude, price, bedrooms, bathrooms] = seed;
   const postedOffsetDays = index % 28;
@@ -62,10 +78,8 @@ export const MOCK_LISTINGS: Listing[] = seeds.map((seed, index) => {
     photos: [photos[index % photos.length], photos[(index + 1) % photos.length]],
     source,
     postedAt: new Date(Date.now() - postedOffsetDays * 24 * 60 * 60 * 1000).toISOString(),
-    url: `https://www.fincaraiz.com.co/apartamento/mock-${index + 1}`,
+    url: getFincaRaizSearchUrl(city, bedrooms, price),
     contactName: source === "directo" ? "Propietario" : "Asesor Inmobiliario",
-    contactPhone: `300555${(1000 + index).toString().slice(-4)}`,
-    whatsapp: `57300555${(1000 + index).toString().slice(-4)}`,
     estrato: ((index % 4) + 1) as 1 | 2 | 3 | 4,
     state: index % 5 === 0 ? "nuevo" : "usado",
     includes: {

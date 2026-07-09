@@ -147,6 +147,58 @@ export default function HomePage() {
         onToggleDarkMode={() => setDarkMode((prev) => !prev)}
       />
 
+      <section className="mx-auto w-full max-w-7xl px-4 pt-5">
+        <div className="rounded-2xl border border-coral/30 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100 p-5 shadow-sm dark:border-coral/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
+          <h2 className="text-xl font-bold text-coral">🔍 Buscar apartamentos reales para Mafe</h2>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">
+            Los datos de demostración te muestran la distribución en el mapa. Para ver oferta real actualizada,
+            búscala directamente en:
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <a
+              href="https://www.fincaraiz.com.co/apartamentos/arriendo/medellin/2-habitaciones/?precio_desde=1300000&precio_hasta=2700000"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
+            >
+              Finca Raíz Medellín
+            </a>
+            <a
+              href="https://www.fincaraiz.com.co/apartamentos/arriendo/sabaneta/2-habitaciones/?precio_desde=1300000&precio_hasta=2700000"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex justify-center rounded-lg bg-blue-700 px-4 py-3 text-sm font-semibold text-white"
+            >
+              Sabaneta en FR
+            </a>
+            <a
+              href="https://www.metrocuadrado.com/apartamentos/arriendo/medellin/?preciomin=1300000&preciomax=2700000&numhabitaciones=2"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex justify-center rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white"
+            >
+              Metrocuadrado
+            </a>
+            <a
+              href="https://www.ciencuadras.com/arriendo/medellin/apartamento?habitaciones=2&precio_min=1300000&precio_max=2700000"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex justify-center rounded-lg bg-orange-700 px-4 py-3 text-sm font-semibold text-white"
+            >
+              CienCuadras Medellín
+            </a>
+            <a
+              href="https://www.ciencuadras.com/arriendo/envigado/sabaneta/apartamento"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex justify-center rounded-lg bg-orange-800 px-4 py-3 text-sm font-semibold text-white"
+            >
+              Envigado/Sabaneta en CienCuadras
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[320px_1fr]">
         <FilterPanel filters={filters} zones={zones} onChange={setFilters} />
 
