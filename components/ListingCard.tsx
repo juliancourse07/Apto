@@ -43,7 +43,8 @@ export default function ListingCard({
   const fincaRaizUrl = getFincaRaizUrl(listing.city, listing.bedrooms, listing.price);
   const metrocuadradoUrl = getMetrocuadradoUrl(listing.city, listing.bedrooms, listing.price);
   const cienCuadrasUrl = getCienCuadrasUrl(listing.city, listing.bedrooms, listing.price);
-  const showRealContact = Boolean(listing.contactPhone && !listing.contactPhone.includes(MOCK_PHONE_PREFIX));
+  const phone = listing.contactPhone ?? "";
+  const showRealContact = phone.length > 0 && !phone.includes(MOCK_PHONE_PREFIX);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

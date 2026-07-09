@@ -64,7 +64,6 @@ export const MOCK_LISTINGS: Listing[] = seeds.map((seed, index) => {
     source,
     postedAt: new Date(Date.now() - postedOffsetDays * 24 * 60 * 60 * 1000).toISOString(),
     url: getFincaRaizUrl(city, bedrooms, price),
-    contactName: source === "directo" ? "Propietario" : "Asesor Inmobiliario",
     estrato: ((index % 4) + 1) as 1 | 2 | 3 | 4,
     state: index % 5 === 0 ? "nuevo" : "usado",
     includes: {
