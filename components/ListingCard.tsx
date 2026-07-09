@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import MatchBadge from "@/components/MatchBadge";
+import { MOCK_PHONE_PREFIX, getCitySlug, getPriceRange } from "@/lib/portal-search";
 import { Listing } from "@/types/listing";
 
 interface ListingCardProps {
@@ -26,15 +27,6 @@ const getAgeBadge = (postedAt: string) => {
   return `${days} días`;
 };
 
-const CITY_SLUGS: Record<string, string> = {
-  Medellín: "medellin",
-  Sabaneta: "sabaneta",
-  Envigado: "envigado",
-  Itagüí: "itagui",
-  Bello: "bello",
-  "La Estrella": "la-estrella",
-};
-
 export default function ListingCard({
   listing,
   distanceToMetroKm,
@@ -43,13 +35,12 @@ export default function ListingCard({
 }: ListingCardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const badge = useMemo(() => getAgeBadge(listing.postedAt), [listing.postedAt]);
-  const citySlug = CITY_SLUGS[listing.city] ?? "medellin";
-  const min = Math.max(0, listing.price - 200000);
-  const max = listing.price + 200000;
+  const citySlug = getCitySlug(listing.city);
+  const { min, max } = getPriceRange(listing.price);
   const fincaRaizUrl = `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${listing.bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
   const metrocuadradoUrl = `https://www.metrocuadrado.com/apartamentos/arriendo/${citySlug}/?preciomin=${min}&preciomax=${max}&numhabitaciones=${listing.bedrooms}`;
   const cienCuadrasUrl = `https://www.ciencuadras.com/arriendo/${citySlug}/apartamento?habitaciones=${listing.bedrooms}&precio_min=${min}&precio_max=${max}`;
-  const showRealContact = Boolean(listing.contactPhone && !listing.contactPhone.includes("300555"));
+  const showRealContact = Boolean(listing.contactPhone && !listing.contactPhone.includes(MOCK_PHONE_PREFIX));
 
   return (
     <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
