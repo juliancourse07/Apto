@@ -1,5 +1,7 @@
 import { Listing } from "@/types/listing";
 
+const BUDGET_MAX = 2_650_000;
+
 interface KpiCardsProps {
   allListings: Listing[];
   filteredListings: Listing[];
@@ -14,7 +16,7 @@ const formatCOP = (value: number) =>
 
 export default function KpiCards({ allListings, filteredListings }: KpiCardsProps) {
   const totalOfertas = allListings.length;
-  const dentroPresupuesto = allListings.filter((l) => l.precio <= 2650000).length;
+  const dentroPresupuesto = allListings.filter((l) => l.precio <= BUDGET_MAX).length;
   const precioPromedio =
     filteredListings.length > 0
       ? filteredListings.reduce((acc, l) => acc + l.precio, 0) / filteredListings.length
