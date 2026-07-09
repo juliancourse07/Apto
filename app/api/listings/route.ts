@@ -1,86 +1,90 @@
 import { NextResponse } from "next/server";
-import { MOCK_LISTINGS } from "@/lib/mock-listings";
+import fs from "fs";
+import path from "path";
 import { Listing } from "@/types/listing";
 
-const safeFetchJson = async (url: string) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3000);
+export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
 
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
   }
-};
+  result.push(current.trim());
+  return result;
+}
 
-const extractListings = (payload: any): Listing[] => {
-  if (!payload || !Array.isArray(payload.listings)) return [];
-
-  return payload.listings
-    .map((item: any, index: number) => ({
-      id: item.id ? String(item.id) : `remote-${index}`,
-      title: item.title ?? "Apartamento en arriendo",
-      price: Number(item.price ?? 0),
-      bedrooms: Number(item.bedrooms ?? 0),
-      bathrooms: Number(item.bathrooms ?? 0),
-      neighborhood: item.neighborhood ?? "Medellín",
-      city: item.city ?? "Medellín",
-      comuna: item.comuna ?? "Comuna 10",
-      latitude: Number(item.latitude),
-      longitude: Number(item.longitude),
-      photos: Array.isArray(item.photos) && item.photos.length > 0 ? item.photos : [MOCK_LISTINGS[0].photos[0]],
-      url: item.url ?? "https://www.fincaraiz.com.co",
-      source: item.source === "directo" ? "directo" : "inmobiliaria",
-      postedAt: item.postedAt ?? new Date().toISOString(),
-      contactName: item.contactName,
-      contactPhone: item.contactPhone,
-      whatsapp: item.whatsapp,
-      estrato: [1, 2, 3, 4].includes(Number(item.estrato)) ? Number(item.estrato) : 3,
-      state: item.state === "nuevo" ? "nuevo" : "usado",
-      includes: {
-        parqueadero: Boolean(item.includes?.parqueadero),
-        mascotas: Boolean(item.includes?.mascotas),
-        amoblado: Boolean(item.includes?.amoblado),
-        serviciosIncluidos: Boolean(item.includes?.serviciosIncluidos),
-        conjuntoCerrado: Boolean(item.includes?.conjuntoCerrado),
-        seguridadPorteria: Boolean(item.includes?.seguridadPorteria),
-        piscinaZonasComunes: Boolean(item.includes?.piscinaZonasComunes),
-      },
-    }))
-    .filter((item: Listing) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
-};
-
-const fetchExternalListings = async () => {
-  const sources = [process.env.FINCARAIZ_PUBLIC_API_URL, process.env.METROCUADRADO_PUBLIC_API_URL].filter(
-    Boolean,
-  ) as string[];
-
-  if (sources.length === 0) return [];
-
-  const settled = await Promise.all(sources.map((sourceUrl) => safeFetchJson(sourceUrl)));
-  return settled.flatMap((payload) => extractListings(payload));
-};
+const DEFAULT_LAT = 6.2442;
+const DEFAULT_LNG = -75.5812;
 
 export async function GET() {
-  const external = await fetchExternalListings();
+  try {
+    const csvPath = path.join(process.cwd(), "public", "Apto_Ofertas.csv");
+    let csvText = fs.readFileSync(csvPath, "utf-8");
 
-  if (external.length > 0) {
-    return NextResponse.json({ source: "externo", listings: external });
+    // Remove BOM if present
+    if (csvText.charCodeAt(0) === 0xfeff) {
+      csvText = csvText.slice(1);
+    }
+
+    const lines = csvText.split(/\r?\n/).filter((l) => l.trim() !== "");
+    const listings: Listing[] = [];
+
+    // Skip header row (index 0)
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      if (cols.length < 20) continue;
+
+      const lat = parseFloat(cols[14]);
+      const lng = parseFloat(cols[15]);
+
+      const listing: Listing = {
+        id: parseInt(cols[0]) || i,
+        fechaConsulta: cols[1] || "",
+        fuente: cols[2] || "",
+        municipio: cols[4] || "",
+        barrio: cols[5] || "",
+        precio: parseInt(cols[6]) || 0,
+        habitaciones: parseInt(cols[7]) || 0,
+        banos: parseInt(cols[8]) || 0,
+        area: parseFloat(cols[9]) || 0,
+        tipoArrendador: cols[10] || "",
+        arrendador: cols[11] || "",
+        url: cols[13] || "",
+        latitud: !isNaN(lat) && lat !== 0 ? lat : DEFAULT_LAT,
+        longitud: !isNaN(lng) && lng !== 0 ? lng : DEFAULT_LNG,
+        distClinicaKm: parseFloat(cols[16]) || 0,
+        estacionMetro: cols[17] || "",
+        lineaMetro: cols[18] || "",
+        distMetroKm: parseFloat(cols[19]) || 0,
+        dentroPresupuesto: ["true", "1", "si", "sí", "yes"].includes(
+          (cols[20] || "").toLowerCase().trim(),
+        ),
+        score: parseFloat(cols[22]) || 0,
+        prioridad: (cols[23] || "").trim(),
+        recomendacion: cols[24] || "",
+        googleMaps: cols[25] || "",
+        notas: cols[26] || "",
+      };
+
+      listings.push(listing);
+    }
+
+    return NextResponse.json({ listings });
+  } catch (error) {
+    console.error("Error reading CSV:", error);
+    return NextResponse.json({ listings: [], error: "Failed to read listings" }, { status: 500 });
   }
-
-  return NextResponse.json({
-    source: "mock",
-    notice:
-      "Sin API pública estable para scraping directo. Conecta FINCARAIZ_PUBLIC_API_URL y/o METROCUADRADO_PUBLIC_API_URL para usar fuentes reales.",
-    listings: MOCK_LISTINGS,
-  });
 }

@@ -2,25 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AptaMafe - Encuentra tu apartamento en Medellín",
-  description:
-    "Buscador de apartamentos en Medellín y municipios cercanos con mapa interactivo, filtros completos y recomendaciones para Mafe.",
+  title: "Apto Mafe",
+  description: "Buscador de apartamentos en arriendo en Medellín y municipios cercanos",
   openGraph: {
-    title: "AptaMafe - Encuentra tu apartamento en Medellín",
-    description:
-      "Mapa, filtros avanzados y recomendaciones para encontrar apartamento cerca del metro y la Clínica León XIII.",
+    title: "Apto Mafe",
+    description: "Mapa interactivo, filtros y recomendaciones para encontrar tu apartamento ideal.",
     type: "website",
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
+  icons: { icon: "/favicon.ico" },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
       <body>{children}</body>
