@@ -2,74 +2,105 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer } from "react-leaflet";
-import { CLINICA_LEON_XIII, METRO_LINE_A, METRO_LINE_B, METRO_STATIONS } from "@/lib/metro-stations";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import { Listing } from "@/types/listing";
-import MapMarker from "@/components/MapMarker";
 
-delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: string })._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+const CLINICA_POS: [number, number] = [6.2588, -75.574];
+
+const formatCOP = (value: number) =>
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(value);
+
+const PRIORIDAD_COLORS: Record<string, string> = {
+  Alta: "#16a34a",
+  Media: "#ea580c",
+  Baja: "#dc2626",
+  Descartar: "#9ca3af",
+};
+
+function getMarkerIcon(prioridad: string) {
+  const color = PRIORIDAD_COLORS[prioridad] ?? "#6b7280";
+  return L.divIcon({
+    className: "",
+    html: `<div style="background-color:${color};width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  });
+}
+
+const clinicIcon = L.divIcon({
+  className: "",
+  html: `<div style="background-color:#ef4444;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:10px">🏥</div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
 });
 
-interface EnrichedListing extends Listing {
-  distanceToMetroKm: number;
-  distanceToClinicKm: number;
-}
-
 interface MapViewProps {
-  listings: EnrichedListing[];
-  clinicRadiusKm: number;
-  metroRadiusKm: number;
-  showMetroRadius: boolean;
+  listings: Listing[];
 }
 
-export default function MapView({ listings, clinicRadiusKm, metroRadiusKm, showMetroRadius }: MapViewProps) {
+export default function MapView({ listings }: MapViewProps) {
   return (
-    <div className="h-[560px] w-full overflow-hidden rounded-2xl border border-orange-100">
+    <div className="h-[500px] w-full overflow-hidden rounded-2xl border border-gray-200">
       <MapContainer center={[6.2442, -75.5812]} zoom={12} className="h-full w-full">
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        />
 
-        <Polyline positions={METRO_LINE_A.map((s) => [s.latitude, s.longitude])} pathOptions={{ color: "#0ea5e9", weight: 4 }} />
-        <Polyline positions={METRO_LINE_B.map((s) => [s.latitude, s.longitude])} pathOptions={{ color: "#f97316", weight: 4 }} />
-
-        <Marker position={[CLINICA_LEON_XIII.latitude, CLINICA_LEON_XIII.longitude]}>
+        <Marker position={CLINICA_POS} icon={clinicIcon}>
           <Popup>🏥 Clínica León XIII</Popup>
         </Marker>
 
-        <Circle
-          center={[CLINICA_LEON_XIII.latitude, CLINICA_LEON_XIII.longitude]}
-          radius={clinicRadiusKm * 1000}
-          pathOptions={{ color: "#ef4444", fillOpacity: 0.05 }}
-        />
-
-        {showMetroRadius &&
-          METRO_STATIONS.map((station) => (
-            <Circle
-              key={`${station.line}-${station.name}`}
-              center={[station.latitude, station.longitude]}
-              radius={metroRadiusKm * 1000}
-              pathOptions={{ color: "#22c55e", fillOpacity: 0.02 }}
-            />
-          ))}
-
-        {METRO_STATIONS.map((station) => (
-          <Marker key={`${station.line}-${station.name}-marker`} position={[station.latitude, station.longitude]}>
+        {listings.map((listing) => (
+          <Marker
+            key={listing.id}
+            position={[listing.latitud, listing.longitud]}
+            icon={getMarkerIcon(listing.prioridad)}
+          >
             <Popup>
-              🚇 {station.name} (Línea {station.line})
+              <div className="space-y-1 text-sm" style={{ minWidth: 200 }}>
+                <p className="font-semibold">
+                  {listing.barrio}, {listing.municipio}
+                </p>
+                <p className="text-base font-bold">{formatCOP(listing.precio)}</p>
+                <p>
+                  🛏️ {listing.habitaciones} hab · 🚿 {listing.banos} baños · 📐 {listing.area} m²
+                </p>
+                <p>⭐ Score: {listing.score} · {listing.prioridad}</p>
+                <p>
+                  🚇 {listing.estacionMetro} ({listing.distMetroKm.toFixed(2)} km) · 🏥{" "}
+                  {listing.distClinicaKm.toFixed(2)} km
+                </p>
+                <div className="flex gap-2 pt-1">
+                  {listing.url && (
+                    <a
+                      href={listing.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 underline"
+                    >
+                      Ver publicación
+                    </a>
+                  )}
+                  <a
+                    href={
+                      listing.googleMaps ||
+                      `https://www.google.com/maps/search/?api=1&query=${listing.latitud},${listing.longitud}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    Maps
+                  </a>
+                </div>
+              </div>
             </Popup>
           </Marker>
-        ))}
-
-        {listings.map((listing) => (
-          <MapMarker
-            key={listing.id}
-            listing={listing}
-            distanceToMetroKm={listing.distanceToMetroKm}
-            distanceToClinicKm={listing.distanceToClinicKm}
-          />
         ))}
       </MapContainer>
     </div>

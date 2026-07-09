@@ -4,178 +4,131 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import FilterPanel from "@/components/FilterPanel";
 import Header from "@/components/Header";
+import KpiCards from "@/components/KpiCards";
 import ListingsGrid from "@/components/ListingsGrid";
-import SkeletonCard from "@/components/SkeletonCard";
-import SplitView from "@/components/SplitView";
-import { haversineDistanceInKm } from "@/lib/haversine";
-import { getMafeMatchScore } from "@/lib/match-score";
-import { CLINICA_LEON_XIII, METRO_STATIONS } from "@/lib/metro-stations";
 import { Listing, ListingFilters } from "@/types/listing";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
-interface EnrichedListing extends Listing {
-  distanceToMetroKm: number;
-  distanceToClinicKm: number;
-  matchScore: number;
-}
-
-const initialFilters: ListingFilters = {
+const DEFAULT_FILTERS: ListingFilters = {
+  search: "",
   minPrice: 1300000,
-  maxPrice: 2700000,
-  bedrooms: "todas",
-  bathrooms: "todas",
-  zone: "todas",
-  nearMetro: false,
-  metroRadiusKm: 1,
-  nearClinic: false,
-  clinicRadiusKm: 2,
-  publicationType: "ambos",
-  listingAge: "todas",
-  includes: [],
-  estratos: [],
-  state: "todos",
-  sortBy: "precio_asc",
+  maxPrice: 2650000,
+  municipio: "",
+  prioridad: "",
+  minHabitaciones: 0,
+  minBanos: 0,
+  maxDistMetroKm: 0,
+  maxDistClinicaKm: 0,
+  fuente: "",
+  sortBy: "score_desc",
 };
 
-const ageInDays = (dateString: string) =>
-  Math.floor((Date.now() - new Date(dateString).getTime()) / (1000 * 60 * 60 * 24));
-
 export default function HomePage() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [viewMode, setViewMode] = useState<"tarjetas" | "mapa" | "split">("split");
-  const [loading, setLoading] = useState(true);
   const [listings, setListings] = useState<Listing[]>([]);
-  const [filters, setFilters] = useState<ListingFilters>(initialFilters);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<ListingFilters>(DEFAULT_FILTERS);
+  const [view, setView] = useState<"mapa" | "tarjetas">("tarjetas");
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const response = await fetch("/api/listings", { cache: "no-store" });
-      const payload = await response.json();
-      setListings(payload.listings || []);
-      setLoading(false);
-    };
-
-    load().catch(() => setLoading(false));
+    fetch("/api/listings")
+      .then((r) => r.json())
+      .then((data) => setListings(data.listings ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
-  }, [darkMode]);
-
-  const enrichedListings = useMemo<EnrichedListing[]>(() => {
-    const withDistances = listings.map((listing) => {
-      const distanceToClinicKm = haversineDistanceInKm(
-        listing.latitude,
-        listing.longitude,
-        CLINICA_LEON_XIII.latitude,
-        CLINICA_LEON_XIII.longitude,
-      );
-
-      const distanceToMetroKm = Math.min(
-        ...METRO_STATIONS.map((station) =>
-          haversineDistanceInKm(listing.latitude, listing.longitude, station.latitude, station.longitude),
-        ),
-      );
-
-      const matchScore = getMafeMatchScore({
-        bedrooms: listing.bedrooms,
-        bathrooms: listing.bathrooms,
-        price: listing.price,
-        distanceToMetroKm,
-        distanceToClinicKm,
-      });
-
-      return { ...listing, distanceToClinicKm, distanceToMetroKm, matchScore };
-    });
-
-    const filtered = withDistances.filter((listing) => {
-      if (listing.price < filters.minPrice || listing.price > filters.maxPrice) return false;
-
-      if (filters.bedrooms === "1" && listing.bedrooms !== 1) return false;
-      if (filters.bedrooms === "2" && listing.bedrooms !== 2) return false;
-      if (filters.bedrooms === "3" && listing.bedrooms !== 3) return false;
-      if (filters.bedrooms === "3+" && listing.bedrooms < 3) return false;
-
-      if (filters.bathrooms === "1" && listing.bathrooms !== 1) return false;
-      if (filters.bathrooms === "2" && listing.bathrooms !== 2) return false;
-      if (filters.bathrooms === "2+" && listing.bathrooms < 2) return false;
-
-      if (filters.zone !== "todas" && `${listing.neighborhood} - ${listing.city}` !== filters.zone) return false;
-
-      if (filters.nearMetro && listing.distanceToMetroKm > filters.metroRadiusKm) return false;
-      if (filters.nearClinic && listing.distanceToClinicKm > filters.clinicRadiusKm) return false;
-
-      if (filters.publicationType !== "ambos" && listing.source !== filters.publicationType) return false;
-
-      if (filters.listingAge === "24h" && ageInDays(listing.postedAt) > 1) return false;
-      if (filters.listingAge === "semana" && ageInDays(listing.postedAt) > 7) return false;
-      if (filters.listingAge === "mes" && ageInDays(listing.postedAt) > 30) return false;
-
-      if (filters.estratos.length > 0 && !filters.estratos.includes(listing.estrato)) return false;
-      if (filters.state !== "todos" && listing.state !== filters.state) return false;
-
-      for (const includeKey of filters.includes) {
-        if (!listing.includes[includeKey]) return false;
-      }
-
-      return true;
-    });
-
-    return filtered.sort((a, b) => {
-      if (filters.sortBy === "precio_asc") return a.price - b.price;
-      if (filters.sortBy === "precio_desc") return b.price - a.price;
-      if (filters.sortBy === "reciente") return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
-      if (filters.sortBy === "metro_cercano") return a.distanceToMetroKm - b.distanceToMetroKm;
-      return a.distanceToClinicKm - b.distanceToClinicKm;
-    });
-  }, [filters, listings]);
-
-  const zones = useMemo(
-    () => Array.from(new Set(listings.map((listing) => `${listing.neighborhood} - ${listing.city}`))).sort(),
+  const municipios = useMemo(
+    () => Array.from(new Set(listings.map((l) => l.municipio))).sort(),
     [listings],
   );
 
+  const fuentes = useMemo(
+    () => Array.from(new Set(listings.map((l) => l.fuente))).sort(),
+    [listings],
+  );
+
+  const filtered = useMemo(() => {
+    let result = listings.filter((l) => {
+      if (l.precio < filters.minPrice || l.precio > filters.maxPrice) return false;
+      if (filters.municipio && l.municipio !== filters.municipio) return false;
+      if (filters.prioridad && l.prioridad !== filters.prioridad) return false;
+      if (filters.minHabitaciones > 0 && l.habitaciones < filters.minHabitaciones) return false;
+      if (filters.minBanos > 0 && l.banos < filters.minBanos) return false;
+      if (filters.maxDistMetroKm > 0 && l.distMetroKm > filters.maxDistMetroKm) return false;
+      if (filters.maxDistClinicaKm > 0 && l.distClinicaKm > filters.maxDistClinicaKm) return false;
+      if (filters.fuente && l.fuente !== filters.fuente) return false;
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        if (!l.barrio.toLowerCase().includes(q) && !l.municipio.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    result = result.sort((a, b) => {
+      if (filters.sortBy === "score_desc") return b.score - a.score;
+      if (filters.sortBy === "precio_asc") return a.precio - b.precio;
+      if (filters.sortBy === "precio_desc") return b.precio - a.precio;
+      if (filters.sortBy === "distMetro_asc") return a.distMetroKm - b.distMetroKm;
+      if (filters.sortBy === "distClinica_asc") return a.distClinicaKm - b.distClinicaKm;
+      return 0;
+    });
+
+    return result;
+  }, [listings, filters]);
+
   return (
-    <main className="min-h-screen bg-warm text-gray-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <Header
-        resultCount={enrichedListings.length}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode((prev) => !prev)}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <Header totalCount={listings.length} filteredCount={filtered.length} />
 
-      <section className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[320px_1fr]">
-        <FilterPanel filters={filters} zones={zones} onChange={setFilters} />
-
-        <div className="space-y-4">
-          {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonCard key={index} />
-              ))}
-            </div>
-          ) : viewMode === "tarjetas" ? (
-            <ListingsGrid listings={enrichedListings} />
-          ) : viewMode === "mapa" ? (
-            <MapView
-              listings={enrichedListings}
-              clinicRadiusKm={filters.clinicRadiusKm}
-              metroRadiusKm={filters.metroRadiusKm}
-              showMetroRadius={filters.nearMetro}
-            />
-          ) : (
-            <SplitView
-              listings={enrichedListings}
-              clinicRadiusKm={filters.clinicRadiusKm}
-              metroRadiusKm={filters.metroRadiusKm}
-              showMetroRadius={filters.nearMetro}
-            />
-          )}
+      <main className="mx-auto max-w-7xl px-4 py-4">
+        <div className="mb-4">
+          <KpiCards allListings={listings} filteredListings={filtered} />
         </div>
-      </section>
-    </main>
+
+        <div className="mb-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setView("tarjetas")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              view === "tarjetas" ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-gray-200"
+            }`}
+          >
+            🗂️ Tarjetas
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("mapa")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              view === "mapa" ? "bg-slate-800 text-white" : "bg-white text-slate-700 border border-gray-200"
+            }`}
+          >
+            🗺️ Mapa
+          </button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+          <FilterPanel
+            filters={filters}
+            municipios={municipios}
+            fuentes={fuentes}
+            onChange={setFilters}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
+          />
+
+          <div>
+            {loading ? (
+              <div className="flex h-40 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-400">
+                Cargando ofertas…
+              </div>
+            ) : view === "mapa" ? (
+              <MapView listings={filtered} />
+            ) : (
+              <ListingsGrid listings={filtered} />
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

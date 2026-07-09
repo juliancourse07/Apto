@@ -1,15 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
-import MatchBadge from "@/components/MatchBadge";
 import { Listing } from "@/types/listing";
 
 interface ListingCardProps {
   listing: Listing;
-  distanceToMetroKm: number;
-  distanceToClinicKm: number;
-  matchScore: number;
 }
 
 const formatCOP = (value: number) =>
@@ -19,102 +13,88 @@ const formatCOP = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const getAgeBadge = (postedAt: string) => {
-  const days = Math.floor((Date.now() - new Date(postedAt).getTime()) / (1000 * 60 * 60 * 24));
-  if (days === 0) return "Hoy";
-  if (days === 1) return "Ayer";
-  return `${days} días`;
+const prioridadStyles: Record<string, string> = {
+  Alta: "bg-green-100 text-green-800",
+  Media: "bg-orange-100 text-orange-800",
+  Baja: "bg-red-100 text-red-700",
+  Descartar: "bg-gray-100 text-gray-500",
 };
 
-export default function ListingCard({
-  listing,
-  distanceToMetroKm,
-  distanceToClinicKm,
-  matchScore,
-}: ListingCardProps) {
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const badge = useMemo(() => getAgeBadge(listing.postedAt), [listing.postedAt]);
+export default function ListingCard({ listing }: ListingCardProps) {
+  const prioridadClass = prioridadStyles[listing.prioridad] ?? "bg-gray-100 text-gray-500";
+
+  const mapsUrl =
+    listing.googleMaps ||
+    `https://www.google.com/maps/search/?api=1&query=${listing.latitud},${listing.longitud}`;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="relative">
-        <Image
-          src={listing.photos[photoIndex]}
-          alt={listing.title}
-          width={1200}
-          height={700}
-          className="h-44 w-full object-cover"
-          loading="lazy"
-        />
-        {listing.photos.length > 1 && (
-          <div className="absolute bottom-2 right-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPhotoIndex((prev) => (prev - 1 + listing.photos.length) % listing.photos.length)}
-              className="rounded-full bg-black/50 px-2 py-1 text-xs text-white"
-            >
-              ◀
-            </button>
-            <button
-              type="button"
-              onClick={() => setPhotoIndex((prev) => (prev + 1) % listing.photos.length)}
-              className="rounded-full bg-black/50 px-2 py-1 text-xs text-white"
-            >
-              ▶
-            </button>
-          </div>
-        )}
-      </div>
-
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold">{listing.title}</h3>
-          <MatchBadge score={matchScore} />
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-2xl font-bold text-slate-900">{formatCOP(listing.precio)}</p>
+            <p className="text-sm text-gray-600">
+              {listing.barrio}, {listing.municipio}
+            </p>
+          </div>
+          <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${prioridadClass}`}>
+            {listing.prioridad}
+          </span>
         </div>
-
-        <p className="text-xl font-bold text-coral">{formatCOP(listing.price)}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          🛏️ {listing.bedrooms} habitaciones · 🚿 {listing.bathrooms} baños
-        </p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          {listing.neighborhood}, {listing.city}
-        </p>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-orange-100 px-2 py-1 text-orange-700 dark:bg-zinc-800 dark:text-zinc-200">
-            {listing.source === "directo" ? "Propietario directo" : "Inmobiliaria"}
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+            🛏️ {listing.habitaciones} hab
           </span>
-          <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700 dark:bg-zinc-800 dark:text-zinc-200">{badge}</span>
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+            🚿 {listing.banos} baños
+          </span>
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+            📐 {listing.area} m²
+          </span>
+          <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">
+            {listing.fuente}
+          </span>
         </div>
 
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          🚇 {distanceToMetroKm.toFixed(2)} km al metro · 🏥 {distanceToClinicKm.toFixed(2)} km a la clínica
-        </p>
+        <p className="text-sm font-medium text-slate-700">⭐ {listing.score}/100</p>
 
-        {listing.contactPhone && (
-          <div className="flex flex-wrap gap-2 text-sm">
-            <span>📞 {listing.contactPhone}</span>
-            {listing.whatsapp && (
-              <a
-                className="text-green-600 underline"
-                target="_blank"
-                rel="noreferrer"
-                href={`https://wa.me/${listing.whatsapp}`}
-              >
-                WhatsApp
-              </a>
-            )}
-          </div>
+        <div className="text-xs text-gray-600">
+          <p>🚇 {listing.estacionMetro} (Línea {listing.lineaMetro}) — {listing.distMetroKm.toFixed(2)} km</p>
+          <p>🏥 Clínica León XIII — {listing.distClinicaKm.toFixed(2)} km</p>
+        </div>
+
+        {listing.recomendacion && (
+          <p className="line-clamp-2 text-xs text-gray-500 italic">{listing.recomendacion}</p>
         )}
 
-        <a
-          href={listing.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex rounded-lg bg-coral px-3 py-2 text-sm font-medium text-white"
-        >
-          Ver publicación
-        </a>
+        <div className="flex gap-2 pt-1">
+          {listing.url ? (
+            <a
+              href={listing.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 rounded-lg bg-slate-800 px-3 py-2 text-center text-xs font-medium text-white hover:bg-slate-700"
+            >
+              Ver publicación
+            </a>
+          ) : (
+            <button
+              disabled
+              className="flex-1 cursor-not-allowed rounded-lg bg-gray-200 px-3 py-2 text-xs font-medium text-gray-400"
+            >
+              Sin enlace
+            </button>
+          )}
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-center text-xs font-medium text-slate-700 hover:bg-slate-50"
+          >
+            📍 Abrir Maps
+          </a>
+        </div>
       </div>
     </article>
   );
