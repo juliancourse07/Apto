@@ -42,10 +42,14 @@ export async function GET() {
     const lines = csvText.split(/\r?\n/).filter((l) => l.trim() !== "");
     const listings: Listing[] = [];
 
+    // Minimum columns needed to read all essential fields (Score at col 25, up to Notas at col 29).
+    // The CSV for Medellín/surroundings never has valid 0,0 coordinates; zero values indicate missing data.
+    const MIN_REQUIRED_COLUMNS = 26;
+
     // Skip header row (index 0)
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i]);
-      if (cols.length < 26) continue;
+      if (cols.length < MIN_REQUIRED_COLUMNS) continue;
 
       const lat = parseFloat(cols[14]);
       const lng = parseFloat(cols[15]);
@@ -63,6 +67,7 @@ export async function GET() {
         tipoArrendador: cols[10] || "",
         arrendador: cols[11] || "",
         url: cols[13] || "",
+        // 0,0 coordinates indicate missing data for Colombian listings
         latitud: !isNaN(lat) && lat !== 0 ? lat : DEFAULT_LAT,
         longitud: !isNaN(lng) && lng !== 0 ? lng : DEFAULT_LNG,
         distClinicaKm: parseFloat(cols[19]) || 0,
