@@ -45,7 +45,7 @@ export async function GET() {
     // Skip header row (index 0)
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i]);
-      if (cols.length < 20) continue;
+      if (cols.length < 26) continue;
 
       const lat = parseFloat(cols[14]);
       const lng = parseFloat(cols[15]);
@@ -63,18 +63,18 @@ export async function GET() {
         tipoArrendador: cols[10] || "",
         arrendador: cols[11] || "",
         url: cols[13] || "",
-        latitud: !isNaN(lat) ? lat : DEFAULT_LAT,
-        longitud: !isNaN(lng) ? lng : DEFAULT_LNG,
-        distClinicaKm: parseFloat(cols[16]) || 0,
-        estacionMetro: cols[17] || "",
-        lineaMetro: cols[18] || "",
-        distMetroKm: parseFloat(cols[19]) || 0,
-        dentroPresupuesto: (cols[20] || "").trim().toLowerCase() === "si",
-        score: parseFloat(cols[22]) || 0,
-        prioridad: (cols[23] || "").trim(),
-        recomendacion: cols[24] || "",
-        googleMaps: cols[25] || "",
-        notas: cols[26] || "",
+        latitud: !isNaN(lat) && lat !== 0 ? lat : DEFAULT_LAT,
+        longitud: !isNaN(lng) && lng !== 0 ? lng : DEFAULT_LNG,
+        distClinicaKm: parseFloat(cols[19]) || 0,
+        estacionMetro: cols[20] || "",
+        lineaMetro: cols[21] || "",
+        distMetroKm: parseFloat(cols[22]) || 0,
+        dentroPresupuesto: (cols[23] || "").trim().toLowerCase() === "si",
+        score: parseFloat(cols[25]) || 0,
+        prioridad: (cols[26] || "").trim(),
+        recomendacion: cols[27] || "",
+        googleMaps: cols[28] || "",
+        notas: cols[29] || "",
       };
 
       listings.push(listing);
