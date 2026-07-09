@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import MatchBadge from "@/components/MatchBadge";
-import { MOCK_PHONE_PREFIX, getCitySlug, getPriceRange } from "@/lib/portal-search";
+import {
+  MOCK_PHONE_PREFIX,
+  getCienCuadrasUrl,
+  getFincaRaizUrl,
+  getMetrocuadradoUrl,
+} from "@/lib/portal-search";
 import { Listing } from "@/types/listing";
 
 interface ListingCardProps {
@@ -35,11 +40,9 @@ export default function ListingCard({
 }: ListingCardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const badge = useMemo(() => getAgeBadge(listing.postedAt), [listing.postedAt]);
-  const citySlug = getCitySlug(listing.city);
-  const { min, max } = getPriceRange(listing.price);
-  const fincaRaizUrl = `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${listing.bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
-  const metrocuadradoUrl = `https://www.metrocuadrado.com/apartamentos/arriendo/${citySlug}/?preciomin=${min}&preciomax=${max}&numhabitaciones=${listing.bedrooms}`;
-  const cienCuadrasUrl = `https://www.ciencuadras.com/arriendo/${citySlug}/apartamento?habitaciones=${listing.bedrooms}&precio_min=${min}&precio_max=${max}`;
+  const fincaRaizUrl = getFincaRaizUrl(listing.city, listing.bedrooms, listing.price);
+  const metrocuadradoUrl = getMetrocuadradoUrl(listing.city, listing.bedrooms, listing.price);
+  const cienCuadrasUrl = getCienCuadrasUrl(listing.city, listing.bedrooms, listing.price);
   const showRealContact = Boolean(listing.contactPhone && !listing.contactPhone.includes(MOCK_PHONE_PREFIX));
 
   return (

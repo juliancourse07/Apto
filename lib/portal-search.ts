@@ -23,3 +23,14 @@ export const getFincaRaizUrl = (city: string, bedrooms: number, price: number) =
   return `https://www.fincaraiz.com.co/apartamentos/arriendo/${citySlug}/${bedrooms}-habitaciones/?precio_desde=${min}&precio_hasta=${max}`;
 };
 
+export const getMetrocuadradoUrl = (city: string, bedrooms: number, price: number) => {
+  const citySlug = getCitySlug(city);
+  const { min, max } = getPriceRange(price);
+  return `https://www.metrocuadrado.com/apartamentos/arriendo/${citySlug}/?preciomin=${min}&preciomax=${max}&numhabitaciones=${bedrooms}`;
+};
+
+export const getCienCuadrasUrl = (city: string, bedrooms: number, price: number) => {
+  const citySlug = getCitySlug(city);
+  const { min, max } = getPriceRange(price);
+  return `https://www.ciencuadras.com/arriendo/${citySlug}/apartamento?habitaciones=${bedrooms}&precio_min=${min}&precio_max=${max}`;
+};
